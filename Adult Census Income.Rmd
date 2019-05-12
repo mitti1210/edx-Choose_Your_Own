@@ -1,12 +1,120 @@
-# library
+---
+title: "Adult Census Income"
+author: "Michihito Mitsuyasu"
+date: "2019/5/12"
+output:
+  pdf_document:
+    highlight: tango
+    latex_engine: xelatex
+    number_sections: yes
+    toc: yes
+    toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE)
+```
+
+## library
+```{R}
 library(tidyverse)
 library(caret)
 library(randomForest)
 library(ggridges)
 library(rpart)
 library(partykit)
+```
 
-#describes the adult dataset 
+
+## Executive summary section
+
+### describes the dataset
+
+This data was extracted from the 1994 Census bureau database by Ronny Kohavi and Barry Becker (Data Mining and Visualization, Silicon Graphics). A set of reasonably clean records was extracted using the following conditions: ((AAGE>16) && (AGI>100) && (AFNLWGT>1) && (HRSWK>0)). 
+
+The prediction task is to determine whether a person makes over $50K a year.
+
+https://www.kaggle.com/uciml/adult-census-income/activity
+
+#### Description of fnlwgt (final weight)
+The weights on the Current Population Survey (CPS) files are controlled to independent estimates of the civilian noninstitutional population of the US. These are prepared monthly for us by Population Division here at the Census Bureau. We use 3 sets of controls. These are:
+
+A single cell estimate of the population 16+ for each state.
+
+Controls for Hispanic Origin by age and sex.
+
+Controls by Race, age and sex.
+
+We use all three sets of controls in our weighting program and "rake" through them 6 times so that by the end we come back to all the controls we used. The term estimate refers to population totals derived from CPS by creating "weighted tallies" of any specified socio-economic characteristics of the population. People with similar demographic characteristics should have similar weights. There is one important caveat to remember about this statement. That is that since the CPS sample is actually a collection of 51 state samples, each with its own probability of selection, the statement only applies within state.
+
+#### About this file
+
+About this file
+Attributes:
+
+>50K, <=50K
+
+age: continuous
+
+workclass: Private, Self-emp-not-inc, Self-emp-inc, Federal-gov, Local-gov, State-gov, Without-pay, Never-worked
+
+fnlwgt: continuous
+
+education: Bachelors, Some-college, 11th, HS-grad, Prof-school, Assoc-acdm, Assoc-voc, 9th, 7th-8th, 12th, Masters, 1st-4th, 10th, Doctorate, 5th-6th, Preschool
+
+education-num: continuous
+
+marital-status: Married-civ-spouse, Divorced, Never-married, Separated, Widowed, Married-spouse-absent, Married-AF-spouse
+
+occupation: Tech-support, Craft-repair, Other-service, Sales, Exec-managerial, Prof-specialty, Handlers-cleaners, Machine-op-inspct, Adm-clerical, Farming-fishing, Transport-moving, Priv-house-serv, Protective-serv, Armed-Forces
+
+relationship: Wife, Own-child, Husband, Not-in-family, Other-relative, Unmarried
+
+race: White, Asian-Pac-Islander, Amer-Indian-Eskimo, Other, Black
+
+sex: Female, Male
+
+capital-gain: continuous
+
+capital-loss: continuous
+
+hours-per-week: continuous
+
+native-country: United-States, Cambodia, England, Puerto-Rico, Canada, Germany, Outlying-US(Guam-USVI-etc), India, Japan, Greece, South, China, Cuba, Iran, Honduras, Philippines, Italy, Poland, Jamaica, Vietnam, Mexico, Portugal, Ireland, France, Dominican-Republic, Laos, Ecuador, Taiwan, Haiti, Columbia, Hungary, Guatemala, Nicaragua, Scotland, Thailand, Yugoslavia, El-Salvador, Trinadad&Tobago, Peru, Hong, Holand-Netherlands
+
+### train set and test set
+
+I will create the trani set and the test set.
+
+The train set is used to develop my algorithm.
+
+The test set is used to evaluate how close your predictions are to the true values.
+
+### The goal of the project
+
+The prediction task is to use a test set to determine whether a person makes over $50K a year.
+
+The predictions will be compared to the true ratings in the test set using accuracy. 
+
+### Key steps that were performed
+
+1. Describes the adult dataset 
+
+2. Data exploration and visualization
+
+3. Generate the train set and the test set
+
+4. Comparison of CART and Random Forests
+   1. CART
+   2. Random Forests
+
+## Methods section
+
+### describes the adult dataset 
+
+I use the following code to generate the adult set. 
+
+```{r}
 #create adult dataset
 adult <- read_csv("https://github.com/mitti1210/edx-Choose_Your_Own/blob/master/adult.csv?raw=true")
 
@@ -25,13 +133,21 @@ adult <-
   mutate(income = as.factor(ifelse(income %in% ">50K", "1", "0")))
 
 head(adult)
+```
 
 ### Data exploration and visualization
+
 #### Exploration
+
+```{R}
 str(adult)
+```
 
 #### Visualization
+
 ##### Bar chart and density chart for each attribute
+
+```{R, echo = FALSE}
 bar_workclass <-
   adult %>% 
   group_by(workclass, income) %>% 
@@ -162,18 +278,26 @@ adult %>%
 adult %>% 
   ggplot(aes(x = hours.per.week, y = income, fill = income)) +
   geom_density_ridges(bandwidth = 2, alpha = 0.7)
+```
+
+The capital gain could be divided into categories.
 
 ##### Create scatter plots of the relationship between education and education num.
 
+```{R}
 adult%>% 
   group_by(education, education.num, income) %>% 
   summarize(n=n()) %>% 
   arrange(education.num) %>% 
   ggplot(aes(x = education.num, y = reorder(education, education.num), color = income))+
   geom_point(aes(size = n))
+```
 
+Education was excluded from variables because education and education.num were in a linear relationship.
 
-# Generate the train set and the test set
+### Generate the train set and the test set
+
+```{R}
 # Education was excluded from variables.
 adult <- 
   adult %>% 
@@ -184,10 +308,15 @@ set.seed(1)
 test_index <- createDataPartition(y = adult$income, times = 1, p = 0.1, list = FALSE)
 train <- adult[-test_index,]
 test <- adult[test_index,]
+```
 
-# Comparison of CART and Random Forests
-# CART
+### Comparison of CART and Random Forests
 
+#### CART
+
+CART used rpart and partykit package.
+
+```{R, eval = FALSE}
 set.seed(1)
 fit_rpart <- rpart(income ~ ., data = train)
 plot(as.party(fit_rpart))
@@ -195,10 +324,13 @@ plot(as.party(fit_rpart))
 yhat_rpart = factor(predict(fit_rpart, test, type = "class"), levels = levels(test$income))
 
 confusionMatrix(yhat_rpart,test$income)  
+```
 
+#### Random Forests
 
-# Random Forests
+Random Forests used the randomForest package.
 
+```{R, eval = FALSE}
 set.seed(1)
 fit_rf <- randomForest(income ~ ., data = train)
 fit_rf
@@ -207,10 +339,63 @@ varImpPlot(fit_rf)
 yhat_rf = factor(predict(fit_rf, test), levels = levels(test$income))
 
 confusionMatrix(yhat_rf, test$income)
+```
 
-# About Accuracy, Sensitivity, and Specificity
 
+## Results section
+
+### CART
+
+```{R, eval = TRUE}
+set.seed(1)
+fit_rpart <- rpart(income ~ ., data = train)
+plot(as.party(fit_rpart))
+
+yhat_rpart = factor(predict(fit_rpart, test, type = "class"), levels = levels(test$income))
+
+confusionMatrix(yhat_rpart,test$income)  
+```
+
+In CART, relationship, capital gain and education number were selected.
+
+### Random Forests
+
+```{R, eval = TRUE}
+set.seed(1)
+fit_rf <- randomForest(income ~ ., data = train)
+fit_rf
+varImpPlot(fit_rf)
+
+yhat_rf = factor(predict(fit_rf, test), levels = levels(test$income))
+
+confusionMatrix(yhat_rf, test$income)
+```
+
+In addition to the CART results, age, fnlwgt, occupation, and marital.
+
+## Conclusion section
+
+### Why CART and Random Forests
+
+This data set contains both numerical data and categorical data, so we selected a method that can support both.
+
+CART can be interpreted, and Random Forests can be visualized using varImpPlot.
+
+### About Accuracy, Sensitivity, and Specificity
+
+Random Forests is more accurate, but CART is more sensitive.
+The accuracy may be due to differences in specificity.
+
+
+```{R, echo=FALSE}
+set.seed(1)
+fit_rpart <- rpart(income ~ ., data = train)
+yhat_rpart = factor(predict(fit_rpart, test, type = "class"), levels = levels(test$income))
 con_rpart <- confusionMatrix(yhat_rpart,test$income)
+
+set.seed(1)
+fit_rf <- randomForest(income ~ ., data = train)
+yhat_rf = factor(predict(fit_rf, test), levels = levels(test$income))
 con_rf <- confusionMatrix(yhat_rf, test$income)
 
 tibble(method = c("CART", "Random Forests"),
@@ -218,3 +403,20 @@ tibble(method = c("CART", "Random Forests"),
        Sensitivity = c(con_rpart[["byClass"]][["Sensitivity"]],con_rf[["byClass"]][["Sensitivity"]]),
        Specificity = c(con_rpart[["byClass"]][["Specificity"]],con_rf[["byClass"]][["Specificity"]])) %>% 
   knitr::kable()
+```
+
+### Results
+
+The accuracy of CART was 0.8409579, and that of Random Forests was 0.8673626.
+
+In CART, relationship, capital gain and education number were selected.
+
+In addition to the CART results, age, fnlwgt, occupation, and marital.
+
+
+
+
+
+
+
+
