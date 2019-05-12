@@ -14,6 +14,12 @@ Adult_Census_Income.pdf
 
 R script file .R
 
+adult.csv is the data set used for this analysis.t
+
+You can download this dataset from the url below:
+
+https://www.kaggle.com/uciml/adult-census-income/activity
+
 Adult Census Income.Rmd is my report in Rmd format.
 
 Adult_Census_Income.pdf is my report in PDF format.
